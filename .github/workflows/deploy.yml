@@ -23,7 +23,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: arn:aws:iam::603085730205:role/github-actions-role
-          role-session-name: GitHub-Action-Role
+          role-session-name: github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Extract branch name
