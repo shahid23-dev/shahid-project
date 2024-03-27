@@ -1,0 +1,47 @@
+name: Build and Deploy
+
+on:
+  workflow_dispatch: {}
+
+env:
+  BUCKET_NAME : "shahid-terraform-bucket"
+  AWS_REGION : "us-east-1"
+  GITHUB_REF: "main"
+
+
+jobs:
+  build:
+    name: Build and Package
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::603085730205:role/github-actions-role
+          role-session-name: GitHub-Action-Role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+      - name: Extract commit hash
+        shell: bash
+        run: echo "##[set-output name=commit_hash;]$(echo "$GITHUB_SHA")"
+        id: extract_hash          
+      
+
+      - name: Make Artifact directory
+        run: mkdir -p ./artifacts
+
+      # Copy build directory to S3
+      - name:  Copy build to S3
+        run: |
+          zip -r ./artifacts/project.zip . -x node_modules/**\* .git/**\* dist/**\* dist/**\*          
+          aws s3 sync  ${GITHUB_WORKSPACE}/artifacts s3://${{ env.BUCKET_NAME }}/${{ steps.extract_branch.outputs.branch }}/latest
+        
