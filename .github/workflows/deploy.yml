@@ -1,47 +1,35 @@
-name: Build and Deploy
+name: Deploy to S3
 
 on:
-  workflow_dispatch: {}
+  push:
+    branches:
+      - main
 
 env:
-  BUCKET_NAME : "shahid-terraform-bucket"
-  AWS_REGION : "us-east-1"
-  GITHUB_REF: "main"
-
+  AWS_REGION: "us-east-1"
+  S3_BUCKET_NAME: "shahid-terraform-bucket"
 
 jobs:
-  build:
-    name: Build and Package
+  deploy:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          role-to-assume: arn:aws:iam::603085730205:role/github-actions-role
-          role-session-name: github-actions-role
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Extract branch name
-        shell: bash
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        id: extract_branch
-      - name: Extract commit hash
-        shell: bash
-        run: echo "##[set-output name=commit_hash;]$(echo "$GITHUB_SHA")"
-        id: extract_hash          
-      
-
-      - name: Make Artifact directory
-        run: mkdir -p ./artifacts
-
-      # Copy build directory to S3
-      - name:  Copy build to S3
+      - name: Authenticate with AWS OIDC
         run: |
-          zip -r ./artifacts/project.zip . -x node_modules/**\* .git/**\* dist/**\* dist/**\*          
-          aws s3 sync  ${GITHUB_WORKSPACE}/artifacts s3://${{ env.BUCKET_NAME }}/${{ steps.extract_branch.outputs.branch }}/latest
-        
+          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+          aws configure set region $AWS_REGION
+
+          aws sts assume-role-with-web-identity \
+            --role-arn "arn:aws:iam::603085730205:role/github-actions-role" \
+            --role-session-name "GitHubActionsSession" \
+            --duration-seconds 900 \
+            --region $AWS_REGION
+
+      - name: Upload to S3
+        run: |
+          aws s3 sync ./index.html s3://$S3_BUCKET_NAME
+
