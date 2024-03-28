@@ -20,8 +20,8 @@ jobs:
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
-          role-to-assume: arn:aws:iam::603085730205:role/github-actions-role
-          role-session-name: github-actions-role
+          role-to-assume: arn:aws:iam::603085730205:role/git-actions-role
+          role-session-name: git-actions-role
           aws-region: ${{ env.AWS_REGION }}
       # Upload a file to AWS s3
       - name:  Copy index.html to s3
