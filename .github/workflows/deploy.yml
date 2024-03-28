@@ -24,7 +24,7 @@ jobs:
           aws configure set region $AWS_REGION
 
           aws sts assume-role-with-web-identity \
-            --role-arn "arn:aws:iam::603085730205:role/github-actions-role" \
+            --role-arn "arn:aws:iam::603085730205:role/git-actions-role" \
             --role-session-name "GitHubActionsSession" \
             --duration-seconds 900 \
             --region $AWS_REGION
